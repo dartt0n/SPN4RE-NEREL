@@ -1,25 +1,14 @@
-import argparse, os, torch
+import os
 import random
+from dataclasses import dataclass
+
 import numpy as np
-from utils.data import build_data
-from trainer.trainer import Trainer
+import torch
+import typer
+
 from models.setpred4RE import SetPred4RE
-
-
-def str2bool(v):
-    return v.lower() in ("true")
-
-
-def add_argument_group(name):
-    arg = parser.add_argument_group(name)
-    return arg
-
-
-def get_args():
-    args, unparsed = parser.parse_known_args()
-    if len(unparsed) > 1:
-        print("Unparsed args: {}".format(unparsed))
-    return args, unparsed
+from trainer.trainer import Trainer
+from utils.data import build_data
 
 
 def set_seed(seed):
@@ -33,63 +22,51 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 
+@dataclass
+class main:
+    dataset_name: str = "NEREL"
+    train_file: str = "./data/NEREL/train.json"
+    valid_file: str = "./data/NEREL/dev.json"
+    test_file: str = "./data/NEREL/test.json"
+    generated_data_directory: str = "./data/generated_data/"
+    generated_param_directory: str = "./data/generated_data/model_param/"
+    bert_directory: str = "./bert_base_cased/"
+    partial: bool = False
+    model_name: str = "Set-Prediction-Networks"
+    num_generated_triples: int = 10
+    num_decoder_layers: int = 3
+    matcher: str = "avg"  # "avg", "min"
+    na_rel_coef: float = 1
+    rel_loss_weight: float = 1
+    head_ent_loss_weight: float = 2
+    tail_ent_loss_weight: float = 2
+    fix_bert_embeddings: bool = True
+    batch_size: int = 8
+    max_epoch: int = 50
+    gradient_accumulation_steps: int = 1
+    decoder_lr: float = 2e-5
+    encoder_lr: float = 1e-5
+    lr_decay: float = 0.01
+    weight_decay: float = 1e-5
+    max_grad_norm: float = 0
+    optimizer: str = "AdamW"  # "Adam", "AdamW"
+    n_best_size: int = 100
+    max_span_length: int = 12
+    refresh: bool = False
+    use_gpu: bool = True
+    visible_gpu: int = 1
+    random_seed: int = 1
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(self.visible_gpu)
+        set_seed(self.random_seed)
+        data = build_data(self)
+        model = SetPred4RE(self, data.relational_alphabet.size())
+        trainer = Trainer(model, data, self)
+        trainer.train_model()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    data_arg = add_argument_group("Data")
-
-    # data_arg.add_argument('--dataset_name', type=str, default="NYT-exact")
-    # data_arg.add_argument('--train_file', type=str, default="./data/NYT/exact_data/train.json")
-    # data_arg.add_argument('--valid_file', type=str, default="./data/NYT/exact_data/valid.json")
-    # data_arg.add_argument('--test_file', type=str, default="./data/NYT/exact_data/test.json")
-
-    # data_arg.add_argument('--dataset_name', type=str, default="NYT-partial")
-    # data_arg.add_argument('--train_file', type=str, default="./data/NYT/casrel_data/new_train.json")
-    # data_arg.add_argument('--valid_file', type=str, default="./data/NYT/casrel_data/new_valid.json")
-    # data_arg.add_argument('--test_file', type=str, default="./data/NYT/casrel_data/new_test.json")
-
-    data_arg.add_argument("--dataset_name", type=str, default="WebNLG")
-    data_arg.add_argument("--train_file", type=str, default="./data/WebNLG/clean_WebNLG/new_train.json")
-    data_arg.add_argument("--valid_file", type=str, default="./data/WebNLG/clean_WebNLG/new_valid.json")
-    data_arg.add_argument("--test_file", type=str, default="./data/WebNLG/clean_WebNLG/new_test.json")
-
-    data_arg.add_argument("--generated_data_directory", type=str, default="./data/generated_data/")
-    data_arg.add_argument("--generated_param_directory", type=str, default="./data/generated_data/model_param/")
-    data_arg.add_argument("--bert_directory", type=str, default="./bert_base_cased/")
-    data_arg.add_argument("--partial", type=str2bool, default=False)
-    learn_arg = add_argument_group("Learning")
-    learn_arg.add_argument("--model_name", type=str, default="Set-Prediction-Networks")
-    learn_arg.add_argument("--num_generated_triples", type=int, default=10)
-    learn_arg.add_argument("--num_decoder_layers", type=int, default=3)
-    learn_arg.add_argument("--matcher", type=str, default="avg", choices=["avg", "min"])
-    learn_arg.add_argument("--na_rel_coef", type=float, default=1)
-    learn_arg.add_argument("--rel_loss_weight", type=float, default=1)
-    learn_arg.add_argument("--head_ent_loss_weight", type=float, default=2)
-    learn_arg.add_argument("--tail_ent_loss_weight", type=float, default=2)
-    learn_arg.add_argument("--fix_bert_embeddings", type=str2bool, default=True)
-    learn_arg.add_argument("--batch_size", type=int, default=8)
-    learn_arg.add_argument("--max_epoch", type=int, default=50)
-    learn_arg.add_argument("--gradient_accumulation_steps", type=int, default=1)
-    learn_arg.add_argument("--decoder_lr", type=float, default=2e-5)
-    learn_arg.add_argument("--encoder_lr", type=float, default=1e-5)
-    learn_arg.add_argument("--lr_decay", type=float, default=0.01)
-    learn_arg.add_argument("--weight_decay", type=float, default=1e-5)
-    learn_arg.add_argument("--max_grad_norm", type=float, default=0)
-    learn_arg.add_argument("--optimizer", type=str, default="AdamW", choices=["Adam", "AdamW"])
-    evaluation_arg = add_argument_group("Evaluation")
-    evaluation_arg.add_argument("--n_best_size", type=int, default=100)
-    evaluation_arg.add_argument("--max_span_length", type=int, default=12)  # NYT webNLG 10
-    misc_arg = add_argument_group("MISC")
-    misc_arg.add_argument("--refresh", type=str2bool, default=False)
-    misc_arg.add_argument("--use_gpu", type=str2bool, default=True)
-    misc_arg.add_argument("--visible_gpu", type=int, default=1)
-    misc_arg.add_argument("--random_seed", type=int, default=1)
-
-    args, unparsed = get_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.visible_gpu)
-    for arg in vars(args):
-        print(arg, ":", getattr(args, arg))
-    set_seed(args.random_seed)
-    data = build_data(args)
-    model = SetPred4RE(args, data.relational_alphabet.size())
-    trainer = Trainer(model, data, args)
-    trainer.train_model()
+    typer.run(main)

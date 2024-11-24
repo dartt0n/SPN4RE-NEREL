@@ -1,7 +1,11 @@
-import torch, random, gc
+import gc
+import random
+
+import torch
+from rich.progress import track
 from torch import nn, optim
-from tqdm import tqdm
 from transformers import AdamW
+
 from utils.average_meter import AverageMeter
 from utils.functions import formulate_gold
 from utils.metric import metric, num_metric, overlap_metric
@@ -70,7 +74,7 @@ class Trainer(nn.Module):
             print("=== Epoch %d train ===" % epoch, flush=True)
             avg_loss = AverageMeter()
             random.shuffle(train_loader)
-            for batch_id in range(total_batch):
+            for batch_id in track(range(total_batch), description=f"Epoch {epoch:03d}/{self.args.max_epoch:03d}"):
                 start = batch_id * batch_size
                 end = (batch_id + 1) * batch_size
                 if end > train_num:

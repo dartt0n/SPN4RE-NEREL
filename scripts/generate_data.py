@@ -1,7 +1,5 @@
 import json
-from math import e
 from pathlib import Path
-import re
 from typing import Annotated
 
 import typer
@@ -107,7 +105,7 @@ def main(
             output_entry = OutputEntry(sentText=entry["text"], relationMentions=output_relations)
             output_entries.append(output_entry)
 
-        with open(output_dir / f"generated-tmp-{split_name}.jsonl", "w") as f:
+        with open(output_dir / f"{split_name}.jsonl", "w") as f:
             for entry in output_entries:
                 f.write(json.dumps(unstructure(entry), ensure_ascii=False) + "\n")
 
@@ -116,7 +114,14 @@ def main(
             output_triples.append(
                 OutputTriple(
                     text=entry.sentText,
-                    triple_list=[(relation.em1Text, relation.label, relation.em2Text) for relation in entry.relationMentions],
+                    triple_list=[
+                        (
+                            relation.em1Text,
+                            relation.label,
+                            relation.em2Text,
+                        )
+                        for relation in entry.relationMentions
+                    ],
                 )
             )
 
