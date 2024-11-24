@@ -1,3 +1,19 @@
+# SPN4RE-NEREL
+
+## Setup environment
+```shell
+git clone https://github.com/dartt0n/SPN4RE-NEREL.git
+cd SPN4RE-NEREL
+uv sync
+```
+
+## Generate data
+```
+uv run scripts/generate_data.py
+```
+
+---- 
+original readme:
 # Joint Entity and Relation Extraction with Set Prediction Networks
 [![GitHub stars](https://img.shields.io/github/stars/DianboWork/SPN4RE?style=flat-square)](https://github.com/DianboWork/SPN4RE/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/DianboWork/SPN4RE?style=flat-square&color=blueviolet)](https://github.com/DianboWork/SPN4RE/network/members)
