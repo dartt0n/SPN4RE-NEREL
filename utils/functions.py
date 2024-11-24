@@ -13,14 +13,33 @@ def remove_accents(text: str) -> str:
     return text.translate(accents_translation_table)
 
 
+def compute_word_index(word_anchor: int, line: str, anchor_pos: str, tokenizer) -> int:
+    head, tail = line[:word_anchor], line[word_anchor:]
+
+    if anchor_pos == "beginning":
+        word = tail.split()[0]
+        tail = tail.removeprefix(word)
+    elif anchor_pos == "end":
+        word = head.split()[-1]
+        head = head.removesuffix(word)
+    else:
+        raise Exception("Invalid anchor position.")
+
+    return len(tokenizer.tokenize(head))
+
+
 def data_process(input_file, relational_alphabet, tokenizer):
     samples = []
     with open(input_file) as f:
         data = json.load(f)
 
     for i in track(range(len(data)), description=f"processing {input_file}"):
-        token_sent = [tokenizer.cls_token]
-        token_sent.extend(tokenizer.tokenize(remove_accents(data[i]["text"])))
+        text = remove_accents(data[i]["text"])
+
+        token_sent = []
+
+        token_sent.append(tokenizer.cls_token)
+        token_sent.extend(tokenizer.tokenize(text))
         token_sent.append(tokenizer.sep_token)
 
         target = {
@@ -35,10 +54,19 @@ def data_process(input_file, relational_alphabet, tokenizer):
             relation_id = relational_alphabet.get_index(relation["type"])
 
             target["relation"].append(relation_id)
-            target["head_start_index"].append(relation["head_entity"]["start"])
-            target["head_end_index"].append(relation["head_entity"]["end"])
-            target["tail_start_index"].append(relation["tail_entity"]["start"])
-            target["tail_end_index"].append(relation["tail_entity"]["end"])
+
+            target["head_start_index"].append(
+                compute_word_index(relation["head_entity"]["start"], data[i]["text"], "beginning", tokenizer)
+            )
+            target["head_end_index"].append(
+                compute_word_index(relation["head_entity"]["end"], data[i]["text"], "end", tokenizer)
+            )
+            target["tail_start_index"].append(
+                compute_word_index(relation["tail_entity"]["start"], data[i]["text"], "beginning", tokenizer)
+            )
+            target["tail_end_index"].append(
+                compute_word_index(relation["tail_entity"]["end"], data[i]["text"], "end", tokenizer)
+            )
 
         sent_id = tokenizer.convert_tokens_to_ids(token_sent)
         samples.append([i, sent_id, target])

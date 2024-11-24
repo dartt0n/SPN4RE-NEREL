@@ -70,6 +70,7 @@ class Trainer(nn.Module):
 
     def train_model(self):
         best_f1 = 0
+        best_result_epoch = -1
         train_loader = self.data.train_loader
         train_num = len(train_loader)
         batch_size = self.args.batch_size
