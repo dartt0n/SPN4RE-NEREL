@@ -10,13 +10,10 @@ def list_index(list1: list, list2: list) -> list:
         for i in start:
             for j in end:
                 if i <= j:
-                    if list2[i:j+1] == list1:
+                    if list2[i : j + 1] == list1:
                         index = (i, j)
                         break
         return index[0], index[1]
-
-
-
 
 
 # def list_index(list1: list, list2: list) -> list:
@@ -33,10 +30,10 @@ def list_index(list1: list, list2: list) -> list:
 #         return i, j
 #
 
+
 def remove_accents(text: str) -> str:
     accents_translation_table = str.maketrans(
-    "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ",
-    "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY"
+        "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ", "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY"
     )
     return text.translate(accents_translation_table)
 
@@ -82,17 +79,15 @@ def _get_best_indexes(logits, n_best_size):
 
 
 def generate_span(start_logits, end_logits, info, args):
-    seq_lens = info["seq_len"] # including [CLS] and [SEP]
+    seq_lens = info["seq_len"]  # including [CLS] and [SEP]
     sent_idxes = info["sent_idx"]
-    _Prediction = collections.namedtuple(
-        "Prediction", ["start_index", "end_index", "start_prob", "end_prob"]
-    )
+    _Prediction = collections.namedtuple("Prediction", ["start_index", "end_index", "start_prob", "end_prob"])
     output = {}
     start_probs = start_logits.softmax(-1)
     end_probs = end_logits.softmax(-1)
     start_probs = start_probs.cpu().tolist()
     end_probs = end_probs.cpu().tolist()
-    for (start_prob, end_prob, seq_len, sent_idx) in zip(start_probs, end_probs, seq_lens, sent_idxes):
+    for start_prob, end_prob, seq_len, sent_idx in zip(start_probs, end_probs, seq_lens, sent_idxes):
         output[sent_idx] = {}
         for triple_id in range(args.num_generated_triples):
             predictions = []
@@ -103,9 +98,9 @@ def generate_span(start_logits, end_logits, info, args):
                     # We could hypothetically create invalid predictions, e.g., predict
                     # that the start of the span is in the sentence. We throw out all
                     # invalid predictions.
-                    if start_index >= (seq_len-1): # [SEP]
+                    if start_index >= (seq_len - 1):  # [SEP]
                         continue
-                    if end_index >= (seq_len-1):
+                    if end_index >= (seq_len - 1):
                         continue
                     if end_index < start_index:
                         continue
@@ -130,25 +125,33 @@ def generate_relation(pred_rel_logits, info, args):
     pred_rels = pred_rels.cpu().tolist()
     sent_idxes = info["sent_idx"]
     output = {}
-    _Prediction = collections.namedtuple(
-        "Prediction", ["pred_rel", "rel_prob"]
-    )
-    for (rel_prob, pred_rel, sent_idx) in zip(rel_probs, pred_rels, sent_idxes):
+    _Prediction = collections.namedtuple("Prediction", ["pred_rel", "rel_prob"])
+    for rel_prob, pred_rel, sent_idx in zip(rel_probs, pred_rels, sent_idxes):
         output[sent_idx] = {}
         for triple_id in range(args.num_generated_triples):
-            output[sent_idx][triple_id] = _Prediction(
-                            pred_rel=pred_rel[triple_id],
-                            rel_prob=rel_prob[triple_id])
+            output[sent_idx][triple_id] = _Prediction(pred_rel=pred_rel[triple_id], rel_prob=rel_prob[triple_id])
     return output
 
 
 def generate_triple(output, info, args, num_classes):
     _Pred_Triple = collections.namedtuple(
-        "Pred_Triple", ["pred_rel", "rel_prob", "head_start_index", "head_end_index", "head_start_prob", "head_end_prob", "tail_start_index", "tail_end_index", "tail_start_prob", "tail_end_prob"]
+        "Pred_Triple",
+        [
+            "pred_rel",
+            "rel_prob",
+            "head_start_index",
+            "head_end_index",
+            "head_start_prob",
+            "head_end_prob",
+            "tail_start_index",
+            "tail_end_index",
+            "tail_start_prob",
+            "tail_end_prob",
+        ],
     )
     pred_head_ent_dict = generate_span(output["head_start_logits"], output["head_end_logits"], info, args)
     pred_tail_ent_dict = generate_span(output["tail_start_logits"], output["tail_end_logits"], info, args)
-    pred_rel_dict = generate_relation(output['pred_rel_logits'], info, args)
+    pred_rel_dict = generate_relation(output["pred_rel_logits"], info, args)
     triples = {}
     for sent_idx in pred_rel_dict:
         triples[sent_idx] = []
@@ -174,7 +177,18 @@ def generate_strategy(pred_rel, pred_head, pred_tail, num_classes, _Pred_Triple)
                 if ele.start_index != 0:
                     break
             tail = ele
-            return _Pred_Triple(pred_rel=pred_rel.pred_rel, rel_prob=pred_rel.rel_prob, head_start_index=head.start_index, head_end_index=head.end_index, head_start_prob=head.start_prob, head_end_prob=head.end_prob, tail_start_index=tail.start_index, tail_end_index=tail.end_index, tail_start_prob=tail.start_prob, tail_end_prob=tail.end_prob)
+            return _Pred_Triple(
+                pred_rel=pred_rel.pred_rel,
+                rel_prob=pred_rel.rel_prob,
+                head_start_index=head.start_index,
+                head_end_index=head.end_index,
+                head_start_prob=head.start_prob,
+                head_end_prob=head.end_prob,
+                tail_start_index=tail.start_index,
+                tail_end_index=tail.end_index,
+                tail_start_prob=tail.start_prob,
+                tail_end_prob=tail.end_prob,
+            )
         else:
             return
     else:
@@ -200,9 +214,11 @@ def formulate_gold(target, info):
     for i in range(len(sent_idxes)):
         gold[sent_idxes[i]] = []
         for j in range(len(target[i]["relation"])):
-            gold[sent_idxes[i]].append(
-                (target[i]["relation"][j].item(), target[i]["head_start_index"][j].item(), target[i]["head_end_index"][j].item(), target[i]["tail_start_index"][j].item(), target[i]["tail_end_index"][j].item())
-            )
+            gold[sent_idxes[i]].append((
+                target[i]["relation"][j].item(),
+                target[i]["head_start_index"][j].item(),
+                target[i]["head_end_index"][j].item(),
+                target[i]["tail_start_index"][j].item(),
+                target[i]["tail_end_index"][j].item(),
+            ))
     return gold
-
-

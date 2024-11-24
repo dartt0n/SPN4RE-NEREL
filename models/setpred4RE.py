@@ -8,25 +8,42 @@ import copy
 
 
 class SetPred4RE(nn.Module):
-
     def __init__(self, args, num_classes):
         super(SetPred4RE, self).__init__()
         self.args = args
         self.encoder = SeqEncoder(args)
         config = self.encoder.config
         self.num_classes = num_classes
-        self.decoder = SetDecoder(config, args.num_generated_triples, args.num_decoder_layers, num_classes, return_intermediate=False)
-        self.criterion = SetCriterion(num_classes,  loss_weight=self.get_loss_weight(args), na_coef=args.na_rel_coef, losses=["entity", "relation"], matcher=args.matcher)
+        self.decoder = SetDecoder(
+            config, args.num_generated_triples, args.num_decoder_layers, num_classes, return_intermediate=False
+        )
+        self.criterion = SetCriterion(
+            num_classes,
+            loss_weight=self.get_loss_weight(args),
+            na_coef=args.na_rel_coef,
+            losses=["entity", "relation"],
+            matcher=args.matcher,
+        )
 
     def forward(self, input_ids, attention_mask, targets=None):
         last_hidden_state, pooler_output = self.encoder(input_ids, attention_mask)
-        class_logits, head_start_logits, head_end_logits, tail_start_logits, tail_end_logits = self.decoder(encoder_hidden_states=last_hidden_state, encoder_attention_mask=attention_mask)
+        class_logits, head_start_logits, head_end_logits, tail_start_logits, tail_end_logits = self.decoder(
+            encoder_hidden_states=last_hidden_state, encoder_attention_mask=attention_mask
+        )
         # head_start_logits, head_end_logits, tail_start_logits, tail_end_logits = span_logits.split(1, dim=-1)
         head_start_logits = head_start_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
         head_end_logits = head_end_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
         tail_start_logits = tail_start_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
-        tail_end_logits = tail_end_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)# [bsz, num_generated_triples, seq_len]
-        outputs = {'pred_rel_logits': class_logits, 'head_start_logits': head_start_logits, 'head_end_logits': head_end_logits, 'tail_start_logits': tail_start_logits, 'tail_end_logits': tail_end_logits}
+        tail_end_logits = tail_end_logits.squeeze(-1).masked_fill(
+            (1 - attention_mask.unsqueeze(1)).bool(), -10000.0
+        )  # [bsz, num_generated_triples, seq_len]
+        outputs = {
+            "pred_rel_logits": class_logits,
+            "head_start_logits": head_start_logits,
+            "head_end_logits": head_end_logits,
+            "tail_start_logits": tail_start_logits,
+            "tail_end_logits": tail_end_logits,
+        }
         if targets is not None:
             loss = self.criterion(outputs, targets)
             return loss, outputs
@@ -56,19 +73,18 @@ class SetPred4RE(nn.Module):
         if self.args.use_gpu:
             input_ids = input_ids.cuda()
             attention_mask = attention_mask.cuda()
-            targets = [{k: torch.tensor(v, dtype=torch.long, requires_grad=False).cuda() for k, v in t.items()} for t in targets]
+            targets = [
+                {k: torch.tensor(v, dtype=torch.long, requires_grad=False).cuda() for k, v in t.items()} for t in targets
+            ]
         else:
             targets = [{k: torch.tensor(v, dtype=torch.long, requires_grad=False) for k, v in t.items()} for t in targets]
         info = {"seq_len": sent_lens, "sent_idx": sent_idx}
         return input_ids, attention_mask, targets, info
 
-
-
     @staticmethod
     def get_loss_weight(args):
-        return {"relation": args.rel_loss_weight, "head_entity": args.head_ent_loss_weight, "tail_entity": args.tail_ent_loss_weight}
-
-
-
-
-
+        return {
+            "relation": args.rel_loss_weight,
+            "head_entity": args.head_ent_loss_weight,
+            "tail_entity": args.tail_ent_loss_weight,
+        }

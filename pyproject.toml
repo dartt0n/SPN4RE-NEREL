@@ -6,9 +6,51 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "accelerate>=1.1.1",
+    "cattrs>=24.1.2",
     "datasets>=3.1.0",
     "scipy>=1.14.1",
     "torch>=2.5.1",
     "tqdm>=4.67.0",
     "transformers==2.6.0",
 ]
+
+[dependency-groups]
+dev = ["jupyter>=1.1.1", "ruff>=0.8.0"]
+
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+exclude = [".mypy_cache", ".ruff_cache", ".venv", "venv", "build", "dist"]
+line-length = 128
+indent-width = 4
+target-version = "py311"
+fix = true
+
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint]
+select = ["E", "F", "Q", "B", "I", "UP", "C"]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
+"**/{tests,docs,tools}/*" = ["E402"]
+
+[tool.ruff.lint.flake8-bandit]
+check-typed-exception = true
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+force-single-line = false

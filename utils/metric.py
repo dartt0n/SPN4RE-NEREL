@@ -8,7 +8,12 @@ def metric(pred, gold):
     for sent_idx in pred:
         gold_num += len(gold[sent_idx])
         pred_correct_num = 0
-        prediction = list(set([(ele.pred_rel, ele.head_start_index, ele.head_end_index, ele.tail_start_index, ele.tail_end_index) for ele in pred[sent_idx]]))
+        prediction = list(
+            set([
+                (ele.pred_rel, ele.head_start_index, ele.head_end_index, ele.tail_start_index, ele.tail_end_index)
+                for ele in pred[sent_idx]
+            ])
+        )
         pred_num += len(prediction)
         for ele in prediction:
             if ele in gold[sent_idx]:
@@ -40,21 +45,32 @@ def metric(pred, gold):
         e_r = ent_num / gold_num
         r_r = rel_num / gold_num
 
-    if (precision == -1) or (recall == -1) or (precision + recall) <= 0.:
+    if (precision == -1) or (recall == -1) or (precision + recall) <= 0.0:
         f_measure = -1
     else:
         f_measure = 2 * precision * recall / (precision + recall)
 
-    if (e_p == -1) or (e_r == -1) or (e_p + e_r) <= 0.:
+    if (e_p == -1) or (e_r == -1) or (e_p + e_r) <= 0.0:
         e_f = -1
     else:
         e_f = 2 * e_r * e_p / (e_p + e_r)
 
-    if (r_p == -1) or (r_r == -1) or (r_p + r_r) <= 0.:
+    if (r_p == -1) or (r_r == -1) or (r_p + r_r) <= 0.0:
         r_f = -1
     else:
         r_f = 2 * r_p * r_r / (r_r + r_p)
-    print("gold_num = ", gold_num, " pred_num = ", pred_num, " right_num = ", right_num, " relation_right_num = ", rel_num, " entity_right_num = ", ent_num)
+    print(
+        "gold_num = ",
+        gold_num,
+        " pred_num = ",
+        pred_num,
+        " right_num = ",
+        right_num,
+        " relation_right_num = ",
+        rel_num,
+        " entity_right_num = ",
+        ent_num,
+    )
     print("precision = ", precision, " recall = ", recall, " f1_value = ", f_measure)
     print("rel_precision = ", r_p, " rel_recall = ", r_r, " rel_f1_value = ", r_f)
     print("ent_precision = ", e_p, " ent_recall = ", e_r, " ent_f1_value = ", e_f)
@@ -121,7 +137,6 @@ def overlap_metric(pred, gold):
     _ = metric(pred_multilabel, gold_multilabel)
     print("--*--*--Overlapping Triplets--*--*--")
     _ = metric(pred_overlap, gold_overlap)
-
 
 
 def is_normal_triplet(triplets):

@@ -16,7 +16,7 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = self.sum / (.0001 + self.count)
+        self.avg = self.sum / (0.0001 + self.count)
 
     def __str__(self):
         """
@@ -26,4 +26,4 @@ class AverageMeter(object):
         if self.count == 0:
             return str(self.val)
         # for stats
-        return '%.4f (%.4f)' % (self.val, self.avg)
+        return "%.4f (%.4f)" % (self.val, self.avg)

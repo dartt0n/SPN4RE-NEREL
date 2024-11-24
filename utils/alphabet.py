@@ -32,7 +32,6 @@ class Alphabet:
             self.index_num[self.next_index] = 1
             self.next_index += 1
 
-
     def get_index(self, instance):
         try:
             index = self.instance2index[instance]
@@ -53,9 +52,9 @@ class Alphabet:
     def get_instance(self, index):
         if index == 0:
             if self.padflag:
-                print(self.name +" get_instance of </pad>, wrong?")
+                print(self.name + " get_instance of </pad>, wrong?")
             if not self.padflag and self.unkflag:
-                print(self.name +" get_instance of </unk>, wrong?")
+                print(self.name + " get_instance of </unk>, wrong?")
             return self.instances[index]
         try:
             return self.instances[index]
@@ -72,7 +71,7 @@ class Alphabet:
     def enumerate_items(self, start=1):
         if start < 1 or start >= self.size():
             raise IndexError("Enumerate is allowed between [1 : size of the alphabet)")
-        return zip(range(start, len(self.instances) + 1), self.instances[start - 1:])
+        return zip(range(start, len(self.instances) + 1), self.instances[start - 1 :])
 
     def close(self):
         self.keep_growing = False
@@ -81,7 +80,7 @@ class Alphabet:
         self.keep_growing = True
 
     def get_content(self):
-        return {'instance2index': self.instance2index, 'instances': self.instances}
+        return {"instance2index": self.instance2index, "instances": self.instances}
 
     def from_json(self, data):
         self.instances = data["instances"]
@@ -96,7 +95,7 @@ class Alphabet:
         """
         saving_name = name if name else self.__name
         try:
-            json.dump(self.get_content(), open(os.path.join(output_directory, saving_name + ".json"), 'w'))
+            json.dump(self.get_content(), open(os.path.join(output_directory, saving_name + ".json"), "w"))
         except Exception as e:
             print("Exception: Alphabet is not saved: " % repr(e))
 
@@ -109,5 +108,3 @@ class Alphabet:
         """
         loading_name = name if name else self.__name
         self.from_json(json.load(open(os.path.join(input_directory, loading_name + ".json"))))
-
-

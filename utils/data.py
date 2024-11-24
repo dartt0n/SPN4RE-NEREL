@@ -1,6 +1,7 @@
 from utils.alphabet import Alphabet
 import os, pickle, copy, sys, copy
 from utils.functions import data_process
+
 try:
     from transformers import BertTokenizer
 except:
@@ -14,7 +15,6 @@ class Data:
         self.valid_loader = []
         self.test_loader = []
         self.weight = {}
-
 
     def show_data_summary(self):
         print("DATA SUMMARY START:")
@@ -38,7 +38,6 @@ class Data:
 
 
 def build_data(args):
-
     file = args.generated_data_directory + args.dataset_name + "_" + args.model_name + "_data.pickle"
     if os.path.exists(file) and not args.refresh:
         data = load_data_setting(args)
@@ -55,17 +54,15 @@ def save_data_setting(data, args):
     if not os.path.exists(args.generated_data_directory):
         os.makedirs(args.generated_data_directory)
     saved_path = args.generated_data_directory + args.dataset_name + "_" + args.model_name + "_data.pickle"
-    with open(saved_path, 'wb') as fp:
+    with open(saved_path, "wb") as fp:
         pickle.dump(new_data, fp)
     print("Data setting is saved to file: ", saved_path)
 
 
 def load_data_setting(args):
-
     saved_path = args.generated_data_directory + args.dataset_name + "_" + args.model_name + "_data.pickle"
-    with open(saved_path, 'rb') as fp:
+    with open(saved_path, "rb") as fp:
         data = pickle.load(fp)
     print("Data setting is loaded from file: ", saved_path)
     data.show_data_summary()
     return data
-

@@ -1,6 +1,7 @@
 """
 Modules to compute the matching cost and solve the corresponding LSAP.
 """
+
 import torch
 from scipy.optimize import linear_sum_assignment
 from torch import nn
@@ -22,7 +23,7 @@ class HungarianMatcher(nn.Module):
 
     @torch.no_grad()
     def forward(self, outputs, targets):
-        """ Performs the matching
+        """Performs the matching
 
         Params:
             outputs: This is a dict that contains at least these entries:
@@ -51,14 +52,26 @@ class HungarianMatcher(nn.Module):
         gold_tail_start = torch.cat([v["tail_start_index"] for v in targets])
         gold_tail_end = torch.cat([v["tail_end_index"] for v in targets])
         if self.matcher == "avg":
-            cost = - self.cost_relation * pred_rel[:, gold_rel] - self.cost_head * 1/2 * (pred_head_start[:, gold_head_start] + pred_head_end[:, gold_head_end]) - self.cost_tail * 1/2 * (pred_tail_start[:, gold_tail_start] + pred_tail_end[:, gold_tail_end])
+            cost = (
+                -self.cost_relation * pred_rel[:, gold_rel]
+                - self.cost_head * 1 / 2 * (pred_head_start[:, gold_head_start] + pred_head_end[:, gold_head_end])
+                - self.cost_tail * 1 / 2 * (pred_tail_start[:, gold_tail_start] + pred_tail_end[:, gold_tail_end])
+            )
         elif self.matcher == "min":
-            cost = torch.cat([pred_head_start[:, gold_head_start].unsqueeze(1), pred_rel[:, gold_rel].unsqueeze(1), pred_head_end[:, gold_head_end].unsqueeze(1), pred_tail_start[:, gold_tail_start].unsqueeze(1), pred_tail_end[:, gold_tail_end].unsqueeze(1)], dim=1)
-            cost = - torch.min(cost, dim=1)[0]
+            cost = torch.cat(
+                [
+                    pred_head_start[:, gold_head_start].unsqueeze(1),
+                    pred_rel[:, gold_rel].unsqueeze(1),
+                    pred_head_end[:, gold_head_end].unsqueeze(1),
+                    pred_tail_start[:, gold_tail_start].unsqueeze(1),
+                    pred_tail_end[:, gold_tail_end].unsqueeze(1),
+                ],
+                dim=1,
+            )
+            cost = -torch.min(cost, dim=1)[0]
         else:
             raise ValueError("Wrong matcher")
         cost = cost.view(bsz, num_generated_triples, -1).cpu()
         num_gold_triples = [len(v["relation"]) for v in targets]
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost.split(num_gold_triples, -1))]
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
-
