@@ -1,5 +1,7 @@
 import json
+from math import e
 from pathlib import Path
+import re
 from typing import Annotated
 
 import typer
@@ -65,6 +67,12 @@ class OutputEntry:
     relationMentions: list[OutputRelation]
 
 
+@define
+class OutputTriple:
+    text: str
+    triple_list: list[tuple[str, str, str]]
+
+
 def main(
     output_dir: Annotated[Path, typer.Argument(default_factory=lambda: Path("data") / "NEREL")],
 ):
@@ -74,8 +82,11 @@ def main(
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True, parents=True)
 
+    relation_types: set[str] = set()
+    entity_types: set[str] = set()
+
     for split_name in splits:
-        result = []
+        output_entries: list[OutputEntry] = []
         for entry in track(ds[split_name], description=f"NEREL/{split_name:<10}"):
             entities = parse_entities(entry["entities"])
             entity_dict = {entity.id: entity for entity in entities}
@@ -90,12 +101,33 @@ def main(
                 for relation in relations
             ]
 
+            relation_types.update([relation.type for relation in relations])
+            entity_types.update([entity.type for entity in entities])
+
             output_entry = OutputEntry(sentText=entry["text"], relationMentions=output_relations)
-            result.append(output_entry)
+            output_entries.append(output_entry)
 
         with open(output_dir / f"generated-tmp-{split_name}.jsonl", "w") as f:
-            for entry in result:
+            for entry in output_entries:
                 f.write(json.dumps(unstructure(entry), ensure_ascii=False) + "\n")
+
+        output_triples: list[OutputTriple] = []
+        for entry in output_entries:
+            output_triples.append(
+                OutputTriple(
+                    text=entry.sentText,
+                    triple_list=[(relation.em1Text, relation.label, relation.em2Text) for relation in entry.relationMentions],
+                )
+            )
+
+        with open(output_dir / f"{split_name}-triplets.json", "w") as f:
+            json.dump([unstructure(triple) for triple in output_triples], f, ensure_ascii=False, indent=2)
+
+    id2rel = dict(enumerate(sorted(relation_types)))
+    rel2id = {type: id for id, type in id2rel.items()}
+
+    with open(output_dir / "rel2id.json", "w") as f:
+        json.dump([id2rel, rel2id], f, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":
