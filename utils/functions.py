@@ -1,41 +1,28 @@
 import collections
+import json
 
 import torch
-
-
-def list_index(list1: list, list2: list) -> list:
-    start = [i for i, x in enumerate(list2) if x == list1[0]]
-    end = [i for i, x in enumerate(list2) if x == list1[-1]]
-    if len(start) == 1 and len(end) == 1:
-        return start[0], end[0]
-    else:
-        for i in start:
-            for j in end:
-                if i <= j:
-                    if list2[i : j + 1] == list1:
-                        index = (i, j)
-                        break
-        return index[0], index[1]
+from rich.progress import track
 
 
 def remove_accents(text: str) -> str:
     accents_translation_table = str.maketrans(
-        "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ", "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY"
+        "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ",
+        "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY",
     )
     return text.translate(accents_translation_table)
 
 
-def data_process(input_doc, relational_alphabet, tokenizer):
+def data_process(input_file, relational_alphabet, tokenizer):
     samples = []
-    with open(input_doc) as f:
-        lines = f.readlines()
-        lines = [eval(ele) for ele in lines]
-    for i in range(len(lines)):
+    with open(input_file) as f:
+        data = json.load(f)
+
+    for i in track(range(len(data)), description=f"processing {input_file}"):
         token_sent = [tokenizer.cls_token]
-        token_sent.extend(tokenizer.tokenize(remove_accents(lines[i]["sentText"])))
+        token_sent.extend(tokenizer.tokenize(remove_accents(data[i]["text"])))
         token_sent.append(tokenizer.sep_token)
 
-        triples = lines[i]["relationMentions"]
         target = {
             "relation": [],
             "head_start_index": [],
@@ -43,21 +30,16 @@ def data_process(input_doc, relational_alphabet, tokenizer):
             "tail_start_index": [],
             "tail_end_index": [],
         }
-        for triple in triples:
-            head_entity = remove_accents(triple["em1Text"])
-            tail_entity = remove_accents(triple["em2Text"])
-            head_token = tokenizer.tokenize(head_entity)
-            tail_token = tokenizer.tokenize(tail_entity)
-            relation_id = relational_alphabet.get_index(triple["label"])
-            head_start_index, head_end_index = list_index(head_token, token_sent)
-            assert head_end_index >= head_start_index
-            tail_start_index, tail_end_index = list_index(tail_token, token_sent)
-            assert tail_end_index >= tail_start_index
+
+        for relation in data[i]["relations"]:
+            relation_id = relational_alphabet.get_index(relation["type"])
+
             target["relation"].append(relation_id)
-            target["head_start_index"].append(head_start_index)
-            target["head_end_index"].append(head_end_index)
-            target["tail_start_index"].append(tail_start_index)
-            target["tail_end_index"].append(tail_end_index)
+            target["head_start_index"].append(relation["head_entity"]["start"])
+            target["head_end_index"].append(relation["head_entity"]["end"])
+            target["tail_start_index"].append(relation["tail_entity"]["start"])
+            target["tail_end_index"].append(relation["tail_entity"]["end"])
+
         sent_id = tokenizer.convert_tokens_to_ids(token_sent)
         samples.append([i, sent_id, target])
     return samples

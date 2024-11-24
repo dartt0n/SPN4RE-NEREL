@@ -73,15 +73,15 @@ def main(
 
     for split_name in splits:
         output_entries: list[OutputEntry] = []
-        for entry in track(ds[split_name], description=f"NEREL/{split_name:<10}"):
-            entities = parse_entities(entry["entities"])
+        for entry in track(ds[split_name], description=f"NEREL/{split_name:<10}"):  # type: ignore
+            entities = parse_entities(entry["entities"])  # type: ignore
             entity_dict = {entity.id: entity for entity in entities}
-            relations = parse_relations(entry["relations"], entity_dict)
+            relations = parse_relations(entry["relations"], entity_dict)  # type: ignore
 
             relation_types.update([relation.type for relation in relations])
             entity_types.update([entity.type for entity in entities])
 
-            output_entry = OutputEntry(text=entry["text"], relations=relations)
+            output_entry = OutputEntry(text=entry["text"], relations=relations)  # type: ignore
             output_entries.append(output_entry)
 
         with open(output_dir / f"{split_name}.json", "w") as f:
