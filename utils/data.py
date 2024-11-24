@@ -29,13 +29,10 @@ class Data:
 
     def generate_instance(self, args, data_process):
         tokenizer = BertTokenizer.from_pretrained(args.bert_directory, do_lower_case=False)
-        if "train_file" in args:
-            self.train_loader = data_process(args.train_file, self.relational_alphabet, tokenizer)
-            self.weight = copy.deepcopy(self.relational_alphabet.index_num)
-        if "valid_file" in args:
-            self.valid_loader = data_process(args.valid_file, self.relational_alphabet, tokenizer)
-        if "test_file" in args:
-            self.test_loader = data_process(args.test_file, self.relational_alphabet, tokenizer)
+        self.train_loader = data_process(args.train_file, self.relational_alphabet, tokenizer)
+        self.weight = copy.deepcopy(self.relational_alphabet.index_num)
+        self.valid_loader = data_process(args.valid_file, self.relational_alphabet, tokenizer)
+        self.test_loader = data_process(args.test_file, self.relational_alphabet, tokenizer)
         self.relational_alphabet.close()
 
 

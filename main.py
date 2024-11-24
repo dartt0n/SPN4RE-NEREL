@@ -30,7 +30,7 @@ class main:
     test_file: str = "./data/NEREL/test.json"
     generated_data_directory: str = "./data/generated_data/"
     generated_param_directory: str = "./data/generated_data/model_param/"
-    bert_directory: str = "./bert_base_cased/"
+    bert_directory: str = "DeepPavlov/rubert-base-cased"
     partial: bool = False
     model_name: str = "Set-Prediction-Networks"
     num_generated_triples: int = 10
@@ -58,8 +58,6 @@ class main:
     random_seed: int = 1
 
     def __post_init__(self):
-        super().__post_init__()
-
         os.environ["CUDA_VISIBLE_DEVICES"] = str(self.visible_gpu)
         set_seed(self.random_seed)
         data = build_data(self)
