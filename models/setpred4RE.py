@@ -1,21 +1,25 @@
-import torch.nn as nn
 import torch
-from models.set_decoder import SetDecoder
-from models.set_criterion import SetCriterion
+import torch.nn as nn
+
 from models.seq_encoder import SeqEncoder
+from models.set_criterion import SetCriterion
+from models.set_decoder import SetDecoder
 from utils.functions import generate_triple
-import copy
 
 
 class SetPred4RE(nn.Module):
     def __init__(self, args, num_classes):
-        super(SetPred4RE, self).__init__()
+        super().__init__()
         self.args = args
         self.encoder = SeqEncoder(args)
         config = self.encoder.config
         self.num_classes = num_classes
         self.decoder = SetDecoder(
-            config, args.num_generated_triples, args.num_decoder_layers, num_classes, return_intermediate=False
+            config,
+            args.num_generated_triples,
+            args.num_decoder_layers,
+            num_classes,
+            return_intermediate=False,
         )
         self.criterion = SetCriterion(
             num_classes,
@@ -31,11 +35,21 @@ class SetPred4RE(nn.Module):
             encoder_hidden_states=last_hidden_state, encoder_attention_mask=attention_mask
         )
         # head_start_logits, head_end_logits, tail_start_logits, tail_end_logits = span_logits.split(1, dim=-1)
-        head_start_logits = head_start_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
-        head_end_logits = head_end_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
-        tail_start_logits = tail_start_logits.squeeze(-1).masked_fill((1 - attention_mask.unsqueeze(1)).bool(), -10000.0)
+        head_start_logits = head_start_logits.squeeze(-1).masked_fill(
+            (1 - attention_mask.unsqueeze(1)).bool(),
+            -10000.0,
+        )
+        head_end_logits = head_end_logits.squeeze(-1).masked_fill(
+            (1 - attention_mask.unsqueeze(1)).bool(),
+            -10000.0,
+        )
+        tail_start_logits = tail_start_logits.squeeze(-1).masked_fill(
+            (1 - attention_mask.unsqueeze(1)).bool(),
+            -10000.0,
+        )
         tail_end_logits = tail_end_logits.squeeze(-1).masked_fill(
-            (1 - attention_mask.unsqueeze(1)).bool(), -10000.0
+            (1 - attention_mask.unsqueeze(1)).bool(),
+            -10000.0,
         )  # [bsz, num_generated_triples, seq_len]
         outputs = {
             "pred_rel_logits": class_logits,
@@ -67,17 +81,21 @@ class SetPred4RE(nn.Module):
         max_sent_len = max(sent_lens)
         input_ids = torch.zeros((batch_size, max_sent_len), requires_grad=False).long()
         attention_mask = torch.zeros((batch_size, max_sent_len), requires_grad=False, dtype=torch.float32)
-        for idx, (seq, seqlen) in enumerate(zip(sent_ids, sent_lens)):
+        for idx, (seq, seqlen) in enumerate(zip(sent_ids, sent_lens, strict=False)):
             input_ids[idx, :seqlen] = torch.LongTensor(seq)
             attention_mask[idx, :seqlen] = torch.FloatTensor([1] * seqlen)
         if self.args.use_gpu:
             input_ids = input_ids.cuda()
             attention_mask = attention_mask.cuda()
             targets = [
-                {k: torch.tensor(v, dtype=torch.long, requires_grad=False).cuda() for k, v in t.items()} for t in targets
+                {key: torch.tensor(value, dtype=torch.long, requires_grad=False).cuda() for key, value in target.items()}  # noqa: E501
+                for target in targets
             ]
         else:
-            targets = [{k: torch.tensor(v, dtype=torch.long, requires_grad=False) for k, v in t.items()} for t in targets]
+            targets = [
+                {key: torch.tensor(value, dtype=torch.long, requires_grad=False) for key, value in target.items()}
+                for target in targets
+            ]
         info = {"seq_len": sent_lens, "sent_idx": sent_idx}
         return input_ids, attention_mask, targets, info
 

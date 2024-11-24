@@ -1,6 +1,7 @@
-import torch.nn.functional as F
+import torch
 import torch.nn as nn
-import torch, math
+import torch.nn.functional as F
+
 from models.matcher import HungarianMatcher
 
 
@@ -9,7 +10,7 @@ class SetCriterion(nn.Module):
     The process happens in two steps:
         1) we compute hungarian assignment between ground truth and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class, subject position and object position)
-    """
+    """  # noqa: E501
 
     def __init__(self, num_classes, loss_weight, na_coef, losses, matcher):
         """Create the criterion.
@@ -19,7 +20,7 @@ class SetCriterion(nn.Module):
             loss_weight: dict containing as key the names of the losses and as values their relative weight.
             na_coef: list containg the relative classification weight applied to the NA category and positional classification weight applied to the [SEP]
             losses: list of all the losses to be applied. See get_loss for list of available losses.
-        """
+        """  # noqa: E501
         super().__init__()
         self.num_classes = num_classes
         self.loss_weight = loss_weight
@@ -54,7 +55,7 @@ class SetCriterion(nn.Module):
         """
         src_logits = outputs["pred_rel_logits"]  # [bsz, num_generated_triples, num_rel+1]
         idx = self._get_src_permutation_idx(indices)
-        target_classes_o = torch.cat([t["relation"][i] for t, (_, i) in zip(targets, indices)])
+        target_classes_o = torch.cat([t["relation"][i] for t, (_, i) in zip(targets, indices, strict=False)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
         loss = F.cross_entropy(src_logits.flatten(0, 1), target_classes.flatten(0, 1), weight=self.rel_weight)
@@ -99,10 +100,10 @@ class SetCriterion(nn.Module):
         selected_pred_tail_start = outputs["tail_start_logits"][idx]
         selected_pred_tail_end = outputs["tail_end_logits"][idx]
 
-        target_head_start = torch.cat([t["head_start_index"][i] for t, (_, i) in zip(targets, indices)])
-        target_head_end = torch.cat([t["head_end_index"][i] for t, (_, i) in zip(targets, indices)])
-        target_tail_start = torch.cat([t["tail_start_index"][i] for t, (_, i) in zip(targets, indices)])
-        target_tail_end = torch.cat([t["tail_end_index"][i] for t, (_, i) in zip(targets, indices)])
+        target_head_start = torch.cat([t["head_start_index"][i] for t, (_, i) in zip(targets, indices, strict=False)])
+        target_head_end = torch.cat([t["head_end_index"][i] for t, (_, i) in zip(targets, indices, strict=False)])
+        target_tail_start = torch.cat([t["tail_start_index"][i] for t, (_, i) in zip(targets, indices, strict=False)])
+        target_tail_end = torch.cat([t["tail_end_index"][i] for t, (_, i) in zip(targets, indices, strict=False)])
 
         head_start_loss = F.cross_entropy(selected_pred_head_start, target_head_start)
         head_end_loss = F.cross_entropy(selected_pred_head_end, target_head_end)

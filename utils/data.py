@@ -1,11 +1,13 @@
-from utils.alphabet import Alphabet
-import os, pickle, copy, sys, copy
-from utils.functions import data_process
+import copy
+import os
+import pickle
+import sys
 
-try:
-    from transformers import BertTokenizer
-except:
-    from pytorch_transformers import BertTokenizer
+from rich import print
+from transformers import BertTokenizer
+
+from utils.alphabet import Alphabet
+from utils.functions import data_process
 
 
 class Data:

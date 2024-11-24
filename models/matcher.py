@@ -27,8 +27,8 @@ class HungarianMatcher(nn.Module):
 
         Params:
             outputs: This is a dict that contains at least these entries:
-                 "pred_rel_logits": Tensor of dim [batch_size, num_generated_triples, num_classes] with the classification logits
-                 "{head, tail}_{start, end}_logits": Tensor of dim [batch_size, num_generated_triples, seq_len] with the predicted index logits
+                "pred_rel_logits": Tensor of dim [batch_size, num_generated_triples, num_classes] with the classification logits
+                "{head, tail}_{start, end}_logits": Tensor of dim [batch_size, num_generated_triples, seq_len] with the predicted index logits
             targets: This is a list of targets (len(targets) = batch_size), where each target is a dict
         Returns:
             A list of size batch_size, containing tuples of (index_i, index_j) where:
@@ -36,13 +36,14 @@ class HungarianMatcher(nn.Module):
                 - index_j is the indices of the corresponding selected targets (in order)
             For each batch element, it holds:
                 len(index_i) = len(index_j) = min(num_generated_triples, num_gold_triples)
-        """
+        """  # noqa: E501
         bsz, num_generated_triples = outputs["pred_rel_logits"].shape[:2]
         # We flatten to compute the cost matrices in a batch
         pred_rel = outputs["pred_rel_logits"].flatten(0, 1).softmax(-1)  # [bsz * num_generated_triples, num_classes]
         gold_rel = torch.cat([v["relation"] for v in targets])
         # after masking the pad token
-        pred_head_start = outputs["head_start_logits"].flatten(0, 1).softmax(-1)  # [bsz * num_generated_triples, seq_len]
+        # [bsz * num_generated_triples, seq_len]
+        pred_head_start = outputs["head_start_logits"].flatten(0, 1).softmax(-1)
         pred_head_end = outputs["head_end_logits"].flatten(0, 1).softmax(-1)
         pred_tail_start = outputs["tail_start_logits"].flatten(0, 1).softmax(-1)
         pred_tail_end = outputs["tail_end_logits"].flatten(0, 1).softmax(-1)

@@ -1,6 +1,6 @@
-import torch.nn as nn
 import torch
-from transformers.modeling_bert import BertIntermediate, BertOutput, BertAttention, BertLayerNorm, BertSelfAttention
+import torch.nn as nn
+from transformers.modeling_bert import BertAttention, BertIntermediate, BertLayerNorm, BertOutput  # type: ignore
 
 
 class SetDecoder(nn.Module):
@@ -59,7 +59,8 @@ class SetDecoder(nn.Module):
         ).squeeze()
         head_end_logits = self.head_end_metric_3(
             torch.tanh(
-                self.head_end_metric_1(hidden_states).unsqueeze(2) + self.head_end_metric_2(encoder_hidden_states).unsqueeze(1)
+                self.head_end_metric_1(hidden_states).unsqueeze(2)
+                + (self.head_end_metric_2(encoder_hidden_states).unsqueeze(1))
             )
         ).squeeze()
 
@@ -71,7 +72,8 @@ class SetDecoder(nn.Module):
         ).squeeze()
         tail_end_logits = self.tail_end_metric_3(
             torch.tanh(
-                self.tail_end_metric_1(hidden_states).unsqueeze(2) + self.tail_end_metric_2(encoder_hidden_states).unsqueeze(1)
+                self.tail_end_metric_1(hidden_states).unsqueeze(2)
+                + (self.tail_end_metric_2(encoder_hidden_states).unsqueeze(1))
             )
         ).squeeze()
 

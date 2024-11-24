@@ -1,10 +1,10 @@
 import torch.nn as nn
-from transformers import BertModel, BertTokenizer
+from transformers import BertModel
 
 
 class SeqEncoder(nn.Module):
     def __init__(self, args):
-        super(SeqEncoder, self).__init__()
+        super().__init__()
         self.args = args
         self.bert = BertModel.from_pretrained(args.bert_directory)
         if args.fix_bert_embeddings:

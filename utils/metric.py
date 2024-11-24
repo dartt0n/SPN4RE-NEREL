@@ -1,3 +1,6 @@
+from rich import print
+
+
 def metric(pred, gold):
     assert pred.keys() == gold.keys()
     gold_num = 0
@@ -8,12 +11,10 @@ def metric(pred, gold):
     for sent_idx in pred:
         gold_num += len(gold[sent_idx])
         pred_correct_num = 0
-        prediction = list(
-            set([
-                (ele.pred_rel, ele.head_start_index, ele.head_end_index, ele.tail_start_index, ele.tail_end_index)
-                for ele in pred[sent_idx]
-            ])
-        )
+        prediction = list({
+            (ele.pred_rel, ele.head_start_index, ele.head_end_index, ele.tail_start_index, ele.tail_end_index)
+            for ele in pred[sent_idx]
+        })
         pred_num += len(prediction)
         for ele in prediction:
             if ele in gold[sent_idx]:
@@ -170,7 +171,7 @@ def is_overlapping(triplets):
 
 
 def get_key_val(dict_1, list_1):
-    dict_2 = dict()
+    dict_2 = {}
     for ele in list_1:
         dict_2.update({ele: dict_1[ele]})
     return dict_2

@@ -2,6 +2,7 @@ import gc
 import random
 
 import torch
+from rich import print
 from rich.progress import track
 from torch import nn, optim
 from transformers import AdamW
@@ -23,28 +24,36 @@ class Trainer(nn.Module):
         grouped_params = [
             {
                 "params": [
-                    p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay) and component[0] in n
+                    parameter
+                    for name, parameter in self.model.named_parameters()
+                    if not any(nd in name for nd in no_decay) and component[0] in name
                 ],
                 "weight_decay": args.weight_decay,
                 "lr": args.encoder_lr,
             },
             {
                 "params": [
-                    p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay) and component[0] in n
+                    parameter
+                    for name, parameter in self.model.named_parameters()
+                    if any(nd in name for nd in no_decay) and component[0] in name
                 ],
                 "weight_decay": 0.0,
                 "lr": args.encoder_lr,
             },
             {
                 "params": [
-                    p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay) and component[1] in n
+                    parameter
+                    for name, parameter in self.model.named_parameters()
+                    if not any(nd in name for nd in no_decay) and component[1] in name
                 ],
                 "weight_decay": args.weight_decay,
                 "lr": args.decoder_lr,
             },
             {
                 "params": [
-                    p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay) and component[1] in n
+                    parameter
+                    for name, parameter in self.model.named_parameters()
+                    if any(nd in name for nd in no_decay) and component[1] in name
                 ],
                 "weight_decay": 0.0,
                 "lr": args.decoder_lr,
@@ -106,11 +115,14 @@ class Trainer(nn.Module):
             f1 = result["f1"]
             if f1 > best_f1:
                 print("Achieving Best Result on Validation Set.", flush=True)
-                # torch.save({'state_dict': self.model.state_dict()}, self.args.generated_param_directory + " %s_%s_epoch_%d_f1_%.4f.model" %(self.model.name, self.args.dataset_name, epoch, result['f1']))
+                torch.save(
+                    {"state_dict": self.model.state_dict()},
+                    self.args.generated_param_directory
+                    + " %s_%s_epoch_%d_f1_%.4f.model" % (self.model.name, self.args.dataset_name, epoch, result["f1"]),
+                )
                 best_f1 = f1
                 best_result_epoch = epoch
-            # if f1 <= 0.3 and epoch >= 10:
-            #     break
+
             gc.collect()
             torch.cuda.empty_cache()
         print("Best result on validation set is %f achieving at epoch %d." % (best_f1, best_result_epoch), flush=True)

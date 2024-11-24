@@ -1,4 +1,4 @@
-class AverageMeter(object):
+class AverageMeter:
     """
     Computes and stores the average and current value of metrics.
     """
@@ -26,4 +26,4 @@ class AverageMeter(object):
         if self.count == 0:
             return str(self.val)
         # for stats
-        return "%.4f (%.4f)" % (self.val, self.avg)
+        return f"{self.val:.4f} ({self.avg:.4f})"

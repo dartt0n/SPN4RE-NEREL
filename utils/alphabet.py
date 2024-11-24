@@ -1,6 +1,8 @@
 import json
 import os
 
+from rich import print
+
 
 class Alphabet:
     def __init__(self, name, padflag=True, unkflag=True, keep_growing=True):
@@ -59,7 +61,7 @@ class Alphabet:
         try:
             return self.instances[index]
         except IndexError:
-            # print('WARNING: '+ self.name + ' Alphabet get_instance, unknown instance, return the </unk> label.')
+            print("WARNING: " + self.name + " Alphabet get_instance, unknown instance, return the </unk> label.")
             return
 
     def size(self):
@@ -71,7 +73,7 @@ class Alphabet:
     def enumerate_items(self, start=1):
         if start < 1 or start >= self.size():
             raise IndexError("Enumerate is allowed between [1 : size of the alphabet)")
-        return zip(range(start, len(self.instances) + 1), self.instances[start - 1 :])
+        return zip(range(start, len(self.instances) + 1), self.instances[start - 1 :], strict=False)
 
     def close(self):
         self.keep_growing = False

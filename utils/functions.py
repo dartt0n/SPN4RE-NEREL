@@ -1,4 +1,6 @@
-import torch, collections
+import collections
+
+import torch
 
 
 def list_index(list1: list, list2: list) -> list:
@@ -16,21 +18,6 @@ def list_index(list1: list, list2: list) -> list:
         return index[0], index[1]
 
 
-# def list_index(list1: list, list2: list) -> list:
-#     start = [i for i, x in enumerate(list2) if x == list1[0]]
-#     end = [i for i, x in enumerate(list2) if x == list1[-1]]
-#     if len(start) == 1 and len(end) == 1:
-#         return start[0], end[0]
-#     else:
-#         for i in start:
-#             for j in end:
-#                 if i <= j:
-#                     if list2[i:j+1] == list1:
-#                         break
-#         return i, j
-#
-
-
 def remove_accents(text: str) -> str:
     accents_translation_table = str.maketrans(
         "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ", "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY"
@@ -44,9 +31,18 @@ def data_process(input_doc, relational_alphabet, tokenizer):
         lines = f.readlines()
         lines = [eval(ele) for ele in lines]
     for i in range(len(lines)):
-        token_sent = [tokenizer.cls_token] + tokenizer.tokenize(remove_accents(lines[i]["sentText"])) + [tokenizer.sep_token]
+        token_sent = [tokenizer.cls_token]
+        token_sent.extend(tokenizer.tokenize(remove_accents(lines[i]["sentText"])))
+        token_sent.append(tokenizer.sep_token)
+
         triples = lines[i]["relationMentions"]
-        target = {"relation": [], "head_start_index": [], "head_end_index": [], "tail_start_index": [], "tail_end_index": []}
+        target = {
+            "relation": [],
+            "head_start_index": [],
+            "head_end_index": [],
+            "tail_start_index": [],
+            "tail_end_index": [],
+        }
         for triple in triples:
             head_entity = remove_accents(triple["em1Text"])
             tail_entity = remove_accents(triple["em2Text"])
@@ -87,7 +83,7 @@ def generate_span(start_logits, end_logits, info, args):
     end_probs = end_logits.softmax(-1)
     start_probs = start_probs.cpu().tolist()
     end_probs = end_probs.cpu().tolist()
-    for start_prob, end_prob, seq_len, sent_idx in zip(start_probs, end_probs, seq_lens, sent_idxes):
+    for start_prob, end_prob, seq_len, sent_idx in zip(start_probs, end_probs, seq_lens, sent_idxes, strict=False):
         output[sent_idx] = {}
         for triple_id in range(args.num_generated_triples):
             predictions = []
@@ -126,7 +122,7 @@ def generate_relation(pred_rel_logits, info, args):
     sent_idxes = info["sent_idx"]
     output = {}
     _Prediction = collections.namedtuple("Prediction", ["pred_rel", "rel_prob"])
-    for rel_prob, pred_rel, sent_idx in zip(rel_probs, pred_rels, sent_idxes):
+    for rel_prob, pred_rel, sent_idx in zip(rel_probs, pred_rels, sent_idxes, strict=False):
         output[sent_idx] = {}
         for triple_id in range(args.num_generated_triples):
             output[sent_idx][triple_id] = _Prediction(pred_rel=pred_rel[triple_id], rel_prob=rel_prob[triple_id])
@@ -162,7 +158,7 @@ def generate_triple(output, info, args, num_classes):
             triple = generate_strategy(pred_rel, pred_head, pred_tail, num_classes, _Pred_Triple)
             if triple:
                 triples[sent_idx].append(triple)
-    # print(triples)
+
     return triples
 
 
@@ -193,19 +189,6 @@ def generate_strategy(pred_rel, pred_head, pred_tail, num_classes, _Pred_Triple)
             return
     else:
         return
-
-
-# def strict_strategy(pred_rel, pred_head, pred_tail, num_classes, _Pred_Triple):
-#     if pred_rel.pred_rel != num_classes:
-#         if pred_head and pred_tail:
-#             if pred_head[0].start_index != 0 and pred_tail[0].start_index != 0:
-#                 return _Pred_Triple(pred_rel=pred_rel.pred_rel, rel_prob=pred_rel.rel_prob, head_start_index=pred_head[0].start_index, head_end_index=pred_head[0].end_index, head_start_prob=pred_head[0].start_prob, head_end_prob=pred_head[0].end_prob, tail_start_index=pred_tail[0].start_index, tail_end_index=pred_tail[0].end_index, tail_start_prob=pred_tail[0].start_prob, tail_end_prob=pred_tail[0].end_prob)
-#             else:
-#                 return
-#         else:
-#             return
-#     else:
-#         return
 
 
 def formulate_gold(target, info):
