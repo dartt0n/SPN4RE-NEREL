@@ -6,6 +6,7 @@ import sys
 from rich import print
 from transformers import BertTokenizer
 
+from config import Config
 from utils.alphabet import Alphabet
 from utils.functions import data_process
 
@@ -20,19 +21,19 @@ class Data:
 
     def show_data_summary(self):
         print("DATA SUMMARY START:")
-        print("     Relation Alphabet Size: %s" % self.relational_alphabet.size())
-        print("     Train  Instance Number: %s" % (len(self.train_loader)))
-        print("     Valid  Instance Number: %s" % (len(self.valid_loader)))
-        print("     Test   Instance Number: %s" % (len(self.test_loader)))
+        print(f"     Relation Alphabet Size: {self.relational_alphabet.size()}")
+        print(f"     Train  Instance Number: {len(self.train_loader)}")
+        print(f"     Valid  Instance Number: {len(self.valid_loader)}")
+        print(f"     Test   Instance Number: {len(self.test_loader)}")
         print("DATA SUMMARY END.")
         sys.stdout.flush()
 
-    def generate_instance(self, args, data_process):
-        tokenizer = BertTokenizer.from_pretrained(args.bert_directory, do_lower_case=False)
-        self.train_loader = data_process(args.train_file, self.relational_alphabet, tokenizer)
+    def generate_instance(self, cfg: Config, data_process):
+        tokenizer = BertTokenizer.from_pretrained(cfg.bert_directory, do_lower_case=False)
+        self.train_loader = data_process(cfg.train_file, self.relational_alphabet, tokenizer)
         self.weight = copy.deepcopy(self.relational_alphabet.index_num)
-        self.valid_loader = data_process(args.valid_file, self.relational_alphabet, tokenizer)
-        self.test_loader = data_process(args.test_file, self.relational_alphabet, tokenizer)
+        self.valid_loader = data_process(cfg.valid_file, self.relational_alphabet, tokenizer)
+        self.test_loader = data_process(cfg.test_file, self.relational_alphabet, tokenizer)
         self.relational_alphabet.close()
 
 

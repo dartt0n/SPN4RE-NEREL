@@ -5,14 +5,6 @@ import torch
 from rich.progress import track
 
 
-def remove_accents(text: str) -> str:
-    accents_translation_table = str.maketrans(
-        "áéíóúýàèìòùỳâêîôûŷäëïöüÿñÁÉÍÓÚÝÀÈÌÒÙỲÂÊÎÔÛŶÄËÏÖÜŸ",
-        "aeiouyaeiouyaeiouyaeiouynAEIOUYAEIOUYAEIOUYAEIOUY",
-    )
-    return text.translate(accents_translation_table)
-
-
 def compute_word_index(word_anchor: int, line: str, anchor_pos: str, tokenizer) -> int:
     head, tail = line[:word_anchor], line[word_anchor:]
 
@@ -34,7 +26,12 @@ def data_process(input_file, relational_alphabet, tokenizer):
         data = json.load(f)
 
     for i in track(range(len(data)), description=f"processing {input_file}"):
-        text = remove_accents(data[i]["text"])
+        text = data[i]["text"]
+
+        # bert can handle only 512 tokens, most of the words in russian are subtokenised
+        # todo: how to increase this limit?
+        if len(text.split()) >= 400:
+            continue
 
         token_sent = []
 

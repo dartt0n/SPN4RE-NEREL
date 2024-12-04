@@ -43,7 +43,7 @@ class SetDecoder(nn.Module):
         hidden_states = self.query_embed.weight.unsqueeze(0).repeat(bsz, 1, 1)
         hidden_states = self.dropout(self.LayerNorm(hidden_states))
         all_hidden_states = ()
-        for i, layer_module in enumerate(self.layers):
+        for _, layer_module in enumerate(self.layers):
             if self.return_intermediate:
                 all_hidden_states = all_hidden_states + (hidden_states,)
             layer_outputs = layer_module(hidden_states, encoder_hidden_states, encoder_attention_mask)

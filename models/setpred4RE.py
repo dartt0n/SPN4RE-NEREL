@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from config import Config
 from models.seq_encoder import SeqEncoder
 from models.set_criterion import SetCriterion
 from models.set_decoder import SetDecoder
@@ -8,25 +9,25 @@ from utils.functions import generate_triple
 
 
 class SetPred4RE(nn.Module):
-    def __init__(self, args, num_classes):
+    def __init__(self, cfg: Config, num_classes: int):
         super().__init__()
-        self.args = args
-        self.encoder = SeqEncoder(args)
-        config = self.encoder.config
+        self.cfg = cfg
+        self.encoder = SeqEncoder(cfg)
+        config = self.encoder.bert_config
         self.num_classes = num_classes
         self.decoder = SetDecoder(
             config,
-            args.num_generated_triples,
-            args.num_decoder_layers,
+            cfg.num_generated_triples,
+            cfg.num_decoder_layers,
             num_classes,
             return_intermediate=False,
         )
         self.criterion = SetCriterion(
             num_classes,
-            loss_weight=self.get_loss_weight(args),
-            na_coef=args.na_rel_coef,
+            loss_weight=self.get_loss_weight(cfg),
+            na_coef=cfg.na_rel_coef,
             losses=["entity", "relation"],
-            matcher=args.matcher,
+            matcher=cfg.matcher,
         )
 
     def forward(self, input_ids, attention_mask, targets=None):
@@ -68,7 +69,7 @@ class SetPred4RE(nn.Module):
         with torch.no_grad():
             outputs = self.forward(input_ids, attention_mask)
             # print(outputs)
-            pred_triple = generate_triple(outputs, info, self.args, self.num_classes)
+            pred_triple = generate_triple(outputs, info, self.cfg, self.num_classes)
             # print(pred_triple)
         return pred_triple
 
@@ -84,7 +85,7 @@ class SetPred4RE(nn.Module):
         for idx, (seq, seqlen) in enumerate(zip(sent_ids, sent_lens, strict=False)):
             input_ids[idx, :seqlen] = torch.LongTensor(seq)
             attention_mask[idx, :seqlen] = torch.FloatTensor([1] * seqlen)
-        if self.args.use_gpu:
+        if self.cfg.gpu:
             input_ids = input_ids.cuda()
             attention_mask = attention_mask.cuda()
             targets = [

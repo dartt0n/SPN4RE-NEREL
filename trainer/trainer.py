@@ -7,15 +7,17 @@ from rich.progress import track
 from torch import nn, optim
 from transformers import AdamW
 
+from config import Config
+from models.setpred4RE import SetPred4RE
 from utils.average_meter import AverageMeter
 from utils.functions import formulate_gold
 from utils.metric import metric, num_metric, overlap_metric
 
 
 class Trainer(nn.Module):
-    def __init__(self, model, data, args):
+    def __init__(self, model: SetPred4RE, data, cfg: Config):
         super().__init__()
-        self.args = args
+        self.args = cfg
         self.model = model
         self.data = data
 
@@ -28,8 +30,8 @@ class Trainer(nn.Module):
                     for name, parameter in self.model.named_parameters()
                     if not any(nd in name for nd in no_decay) and component[0] in name
                 ],
-                "weight_decay": args.weight_decay,
-                "lr": args.encoder_lr,
+                "weight_decay": cfg.weight_decay,
+                "lr": cfg.encoder_lr,
             },
             {
                 "params": [
@@ -38,7 +40,7 @@ class Trainer(nn.Module):
                     if any(nd in name for nd in no_decay) and component[0] in name
                 ],
                 "weight_decay": 0.0,
-                "lr": args.encoder_lr,
+                "lr": cfg.encoder_lr,
             },
             {
                 "params": [
@@ -46,8 +48,8 @@ class Trainer(nn.Module):
                     for name, parameter in self.model.named_parameters()
                     if not any(nd in name for nd in no_decay) and component[1] in name
                 ],
-                "weight_decay": args.weight_decay,
-                "lr": args.decoder_lr,
+                "weight_decay": cfg.weight_decay,
+                "lr": cfg.decoder_lr,
             },
             {
                 "params": [
@@ -56,16 +58,16 @@ class Trainer(nn.Module):
                     if any(nd in name for nd in no_decay) and component[1] in name
                 ],
                 "weight_decay": 0.0,
-                "lr": args.decoder_lr,
+                "lr": cfg.decoder_lr,
             },
         ]
-        if args.optimizer == "Adam":
+        if cfg.optimizer == "Adam":
             self.optimizer = optim.Adam(grouped_params)
-        elif args.optimizer == "AdamW":
+        elif cfg.optimizer == "AdamW":
             self.optimizer = AdamW(grouped_params)
         else:
             raise Exception("Invalid optimizer.")
-        if args.use_gpu:
+        if cfg.gpu:
             self.cuda()
 
     def train_model(self):
@@ -81,7 +83,6 @@ class Trainer(nn.Module):
             self.model.train()
             self.model.zero_grad()
             self.optimizer = self.lr_decay(self.optimizer, epoch, self.args.lr_decay)
-            print("=== Epoch %d train ===" % epoch, flush=True)
             avg_loss = AverageMeter()
             random.shuffle(train_loader)
             for batch_id in track(range(total_batch), description=f"Epoch {epoch:03d}/{self.args.max_epoch:03d}"):
@@ -104,11 +105,11 @@ class Trainer(nn.Module):
                     self.optimizer.step()
                     self.model.zero_grad()
                 if batch_id % 100 == 0 and batch_id != 0:
-                    print("     Instance: %d; loss: %.4f" % (start, avg_loss.avg), flush=True)
+                    print(f"     Instance: {start}; loss: {avg_loss.avg:.4f}")
             gc.collect()
             torch.cuda.empty_cache()
             # Validation
-            print("=== Epoch %d Validation ===" % epoch)
+            print(f"=== Epoch {epoch} Validation ===")
             result = self.eval_model(self.data.valid_loader)
             # Test
             # print("=== Epoch %d Test ===" % epoch, flush=True)
@@ -119,14 +120,14 @@ class Trainer(nn.Module):
                 torch.save(
                     {"state_dict": self.model.state_dict()},
                     self.args.generated_param_directory
-                    + " %s_%s_epoch_%d_f1_%.4f.model" % (self.model.name, self.args.dataset_name, epoch, result["f1"]),
+                    + f"{self.model.name}_{self.args.dataset_name}_epoch_{epoch}_f1_{result['f1']:.4f}.model",
                 )
                 best_f1 = f1
                 best_result_epoch = epoch
 
             gc.collect()
             torch.cuda.empty_cache()
-        print("Best result on validation set is %f achieving at epoch %d." % (best_f1, best_result_epoch), flush=True)
+        print(f"Best result on validation set is {best_f1} achieving at epoch {best_result_epoch}.")
 
     def eval_model(self, eval_loader):
         self.model.eval()
@@ -153,7 +154,7 @@ class Trainer(nn.Module):
         overlap_metric(prediction, gold)
         return metric(prediction, gold)
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict):  # type: ignore
         self.model.load_state_dict(state_dict)
 
     @staticmethod

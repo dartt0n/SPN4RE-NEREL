@@ -99,7 +99,7 @@ class Alphabet:
         try:
             json.dump(self.get_content(), open(os.path.join(output_directory, saving_name + ".json"), "w"))
         except Exception as e:
-            print("Exception: Alphabet is not saved: " % repr(e))
+            print("Exception: Alphabet is not saved: ", e)
 
     def load(self, input_directory, name=None):
         """
