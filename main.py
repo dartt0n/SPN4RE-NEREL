@@ -1,6 +1,7 @@
 import os
 import random
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -28,6 +29,10 @@ class Main(Config):
     def __post_init__(self):
         os.environ["CUDA_VISIBLE_DEVICES"] = str(self.visible_gpu)
         set_seed(self.random_seed)
+
+        Path(self.generated_data_directory).mkdir(exist_ok=True, parents=True)
+        Path(self.generated_param_directory).mkdir(exist_ok=True, parents=True)
+
         data = build_data(self)
         model = SetPred4RE(self, data.relational_alphabet.size())
         trainer = Trainer(model, data, self)

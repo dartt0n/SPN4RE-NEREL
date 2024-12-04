@@ -29,14 +29,14 @@ def data_process(input_file, relational_alphabet, tokenizer):
         text = data[i]["text"]
 
         # bert can handle only 512 tokens, most of the words in russian are subtokenised
-        # todo: how to increase this limit?
-        if len(text.split()) >= 400:
+
+        tokens = tokenizer.tokenize(text)
+        if len(tokens) > 500:
             continue
 
         token_sent = []
-
         token_sent.append(tokenizer.cls_token)
-        token_sent.extend(tokenizer.tokenize(text))
+        token_sent.extend(tokens)
         token_sent.append(tokenizer.sep_token)
 
         target = {

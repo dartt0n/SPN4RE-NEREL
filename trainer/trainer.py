@@ -120,7 +120,7 @@ class Trainer(nn.Module):
                 torch.save(
                     {"state_dict": self.model.state_dict()},
                     self.args.generated_param_directory
-                    + f"{self.model.name}_{self.args.dataset_name}_epoch_{epoch}_f1_{result['f1']:.4f}.model",
+                    + f"{self.args.model_name}_{self.args.dataset_name}_epoch_{epoch}_f1_{result['f1']:.4f}.model",
                 )
                 best_f1 = f1
                 best_result_epoch = epoch
