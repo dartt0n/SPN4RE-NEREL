@@ -14,47 +14,16 @@ uv run scripts/generate_data.py
 
 ## Run training
 ```shell
-uv run main.py --no-gpu # in case you don't have GPU
-uv run main.py --gpu    # in case you have GPU
+uv run main.py # CPU
+
+uv run main.py --device cpu # CPU
+uv run main.py --device gpu # GPU
+uv run main.py --device mps # MPS
 ```
 
 Full list of options:
 ```shell
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --dataset-name                                       TEXT     [default: NEREL]                                                                                                                                               │
-│ --train-file                                         TEXT     [default: ./data/NEREL/train.json]                                                                                                                             │
-│ --valid-file                                         TEXT     [default: ./data/NEREL/dev.json]                                                                                                                               │
-│ --test-file                                          TEXT     [default: ./data/NEREL/test.json]                                                                                                                              │
-│ --generated-data-directory                           TEXT     [default: ./data/generated_data/]                                                                                                                              │
-│ --generated-param-directory                          TEXT     [default: ./data/generated_data/model_param/]                                                                                                                  │
-│ --bert-directory                                     TEXT     [default: DeepPavlov/rubert-base-cased]                                                                                                                        │
-│ --partial                        --no-partial                 [default: no-partial]                                                                                                                                          │
-│ --model-name                                         TEXT     [default: Set-Prediction-Networks]                                                                                                                             │
-│ --num-generated-triples                              INTEGER  [default: 10]                                                                                                                                                  │
-│ --num-decoder-layers                                 INTEGER  [default: 3]                                                                                                                                                   │
-│ --matcher                                            TEXT     [default: avg]                                                                                                                                                 │
-│ --na-rel-coef                                        FLOAT    [default: 1]                                                                                                                                                   │
-│ --rel-loss-weight                                    FLOAT    [default: 1]                                                                                                                                                   │
-│ --head-ent-loss-weight                               FLOAT    [default: 2]                                                                                                                                                   │
-│ --tail-ent-loss-weight                               FLOAT    [default: 2]                                                                                                                                                   │
-│ --freeze-bert                    --no-freeze-bert             [default: freeze-bert]                                                                                                                                         │
-│ --batch-size                                         INTEGER  [default: 8]                                                                                                                                                   │
-│ --max-epoch                                          INTEGER  [default: 50]                                                                                                                                                  │
-│ --gradient-accumulation-steps                        INTEGER  [default: 1]                                                                                                                                                   │
-│ --decoder-lr                                         FLOAT    [default: 2e-05]                                                                                                                                               │
-│ --encoder-lr                                         FLOAT    [default: 1e-05]                                                                                                                                               │
-│ --lr-decay                                           FLOAT    [default: 0.01]                                                                                                                                                │
-│ --weight-decay                                       FLOAT    [default: 1e-05]                                                                                                                                               │
-│ --max-grad-norm                                      FLOAT    [default: 0]                                                                                                                                                   │
-│ --optimizer                                          TEXT     [default: AdamW]                                                                                                                                               │
-│ --n-best-size                                        INTEGER  [default: 100]                                                                                                                                                 │
-│ --max-span-length                                    INTEGER  [default: 12]                                                                                                                                                  │
-│ --refresh                        --no-refresh                 [default: no-refresh]                                                                                                                                          │
-│ --gpu                            --no-gpu                     [default: gpu]                                                                                                                                                 │
-│ --visible-gpu                                        INTEGER  [default: 1]                                                                                                                                                   │
-│ --random-seed                                        INTEGER  [default: 1]                                                                                                                                                   │
-│ --help                                                        Show this message and exit.                                                                                                                                    │
-╰──
+uv run main.py --help
 ```
 
 ---- 
