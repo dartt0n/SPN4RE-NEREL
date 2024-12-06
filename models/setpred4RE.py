@@ -85,18 +85,17 @@ class SetPred4RE(nn.Module):
         for idx, (seq, seqlen) in enumerate(zip(sent_ids, sent_lens, strict=False)):
             input_ids[idx, :seqlen] = torch.LongTensor(seq)
             attention_mask[idx, :seqlen] = torch.FloatTensor([1] * seqlen)
-        if self.cfg.gpu:
-            input_ids = input_ids.cuda()
-            attention_mask = attention_mask.cuda()
-            targets = [
-                {key: torch.tensor(value, dtype=torch.long, requires_grad=False).cuda() for key, value in target.items()}  # noqa: E501
-                for target in targets
-            ]
-        else:
-            targets = [
-                {key: torch.tensor(value, dtype=torch.long, requires_grad=False) for key, value in target.items()}
-                for target in targets
-            ]
+
+        input_ids = input_ids.to(self.cfg.device)
+        attention_mask = attention_mask.to(self.cfg.device)
+        targets = [
+            {
+                key: torch.tensor(value, dtype=torch.long, requires_grad=False).to(self.cfg.device)
+                for key, value in target.items()
+            }
+            for target in targets
+        ]
+
         info = {"seq_len": sent_lens, "sent_idx": sent_idx}
         return input_ids, attention_mask, targets, info
 

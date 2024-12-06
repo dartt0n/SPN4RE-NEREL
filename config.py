@@ -19,8 +19,8 @@ class Config:
     rel_loss_weight: float = 1
     head_ent_loss_weight: float = 2
     tail_ent_loss_weight: float = 2
-    freeze_bert: bool = False
-    batch_size: int = 16
+    freeze_bert: bool = True
+    batch_size: int = 4
     max_epoch: int = 100
     gradient_accumulation_steps: int = 1
     decoder_lr: float = 2e-5
@@ -32,6 +32,5 @@ class Config:
     n_best_size: int = 100
     max_span_length: int = 12
     refresh: bool = False
-    gpu: bool = True
-    visible_gpu: int = 1
-    random_seed: int = 1
+    device: str = "cpu"
+    random_seed: int | None = None

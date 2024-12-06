@@ -13,7 +13,7 @@ from trainer.trainer import Trainer
 from utils.data import build_data
 
 
-def set_seed(seed):
+def set_seed(seed: int):
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
@@ -27,15 +27,15 @@ def set_seed(seed):
 @dataclass
 class Main(Config):
     def __post_init__(self):
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(self.visible_gpu)
-        set_seed(self.random_seed)
+        if self.random_seed is not None:
+            set_seed(self.random_seed)
 
         Path(self.generated_data_directory).mkdir(exist_ok=True, parents=True)
         Path(self.generated_param_directory).mkdir(exist_ok=True, parents=True)
 
         data = build_data(self)
         model = SetPred4RE(self, data.relational_alphabet.size())
-        trainer = Trainer(model, data, self)
+        trainer = Trainer(model, data, self).to(self.device)
         trainer.train_model()
 
 

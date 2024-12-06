@@ -17,7 +17,7 @@ from utils.metric import metric, num_metric, overlap_metric
 class Trainer(nn.Module):
     def __init__(self, model: SetPred4RE, data, cfg: Config):
         super().__init__()
-        self.args = cfg
+        self.cfg = cfg
         self.model = model
         self.data = data
 
@@ -67,25 +67,24 @@ class Trainer(nn.Module):
             self.optimizer = AdamW(grouped_params)
         else:
             raise Exception("Invalid optimizer.")
-        if cfg.gpu:
-            self.cuda()
+        self.to(self.cfg.device)
 
     def train_model(self):
         best_f1 = 0
         best_result_epoch = -1
         train_loader = self.data.train_loader
         train_num = len(train_loader)
-        batch_size = self.args.batch_size
+        batch_size = self.cfg.batch_size
         total_batch = train_num // batch_size + 1
         # result = self.eval_model(self.data.test_loader)
-        for epoch in range(self.args.max_epoch):
+        for epoch in range(self.cfg.max_epoch):
             # Train
             self.model.train()
             self.model.zero_grad()
-            self.optimizer = self.lr_decay(self.optimizer, epoch, self.args.lr_decay)
+            self.optimizer = self.lr_decay(self.optimizer, epoch, self.cfg.lr_decay)
             avg_loss = AverageMeter()
             random.shuffle(train_loader)
-            for batch_id in track(range(total_batch), description=f"Epoch {epoch:03d}/{self.args.max_epoch:03d}"):
+            for batch_id in track(range(total_batch), description=f"Epoch {epoch + 1:03d}/{self.cfg.max_epoch:03d}"):
                 start = batch_id * batch_size
                 end = (batch_id + 1) * batch_size
                 if end > train_num:
@@ -99,15 +98,14 @@ class Trainer(nn.Module):
                 avg_loss.update(loss.item(), 1)
                 # Optimize
                 loss.backward()
-                if self.args.max_grad_norm != 0:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.max_grad_norm)
-                if (batch_id + 1) % self.args.gradient_accumulation_steps == 0:
+                if self.cfg.max_grad_norm != 0:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.cfg.max_grad_norm)
+                if (batch_id + 1) % self.cfg.gradient_accumulation_steps == 0:
                     self.optimizer.step()
                     self.model.zero_grad()
                 if batch_id % 100 == 0 and batch_id != 0:
                     print(f"     Instance: {start}; loss: {avg_loss.avg:.4f}")
-            gc.collect()
-            torch.cuda.empty_cache()
+
             # Validation
             print(f"=== Epoch {epoch} Validation ===")
             result = self.eval_model(self.data.valid_loader)
@@ -119,14 +117,12 @@ class Trainer(nn.Module):
                 print("Achieving Best Result on Validation Set.", flush=True)
                 torch.save(
                     {"state_dict": self.model.state_dict()},
-                    self.args.generated_param_directory
-                    + f"{self.args.model_name}_{self.args.dataset_name}_epoch_{epoch}_f1_{result['f1']:.4f}.model",
+                    self.cfg.generated_param_directory
+                    + f"{self.cfg.model_name}_{self.cfg.dataset_name}_epoch_{epoch}_f1_{result['f1']:.4f}.model",
                 )
                 best_f1 = f1
                 best_result_epoch = epoch
 
-            gc.collect()
-            torch.cuda.empty_cache()
         print(f"Best result on validation set is {best_f1} achieving at epoch {best_result_epoch}.")
 
     def eval_model(self, eval_loader):
@@ -134,7 +130,7 @@ class Trainer(nn.Module):
         # print(self.model.decoder.query_embed.weight)
         prediction, gold = {}, {}
         with torch.no_grad():
-            batch_size = self.args.batch_size
+            batch_size = self.cfg.batch_size
             eval_num = len(eval_loader)
             total_batch = eval_num // batch_size + 1
             for batch_id in range(total_batch):
